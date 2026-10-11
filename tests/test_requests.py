@@ -10,7 +10,7 @@ import pytest
 
 from starlette.datastructures import URL, Address, State
 from starlette.requests import ClientDisconnect, Request
-from starlette.responses import JSONResponse, PlainTextResponse, Response
+from starlette.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
 from starlette.types import Message, Receive, Scope, Send
 from tests.types import TestClientFactory
 
@@ -711,3 +711,20 @@ def test_request_url_starlette_context(test_client_factory: TestClientFactory) -
     client = test_client_factory(app)
     client.get("/home")
     assert url_for == URL("http://testserver/home")
+
+
+def test_request_url_without_host_prevents_authority_bleed() -> None:
+    scope: Scope = {
+        "type": "http",
+        "scheme": "http",
+        "path": "//evil.example/x",
+        "query_string": b"a=1",
+        "headers": [],
+        "server": None,
+    }
+    request = Request(scope)
+    assert request.url.netloc == ""
+    assert request.url.hostname is None
+    assert request.url.path == "//evil.example/x"
+    redirect = RedirectResponse(request.url)
+    assert not redirect.headers["location"].startswith("//evil.example")

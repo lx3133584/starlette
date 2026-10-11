@@ -139,6 +139,21 @@ def test_url_from_scope() -> None:
     assert u == "/path/to/somewhere"
     assert repr(u) == "URL('/path/to/somewhere')"
 
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "//evil.example/x",
+        "//google.com",
+        "//evil.example:8080/x",
+    ],
+)
+def test_url_from_scope_without_host_prevents_authority_bleed(path: str) -> None:
+    u = URL(scope={"path": path, "query_string": b"a=1", "headers": [], "server": None})
+    assert u.netloc == ""
+    assert u.hostname is None
+    assert u.path == path
+
     u = URL(
         scope={
             "scheme": "https",
