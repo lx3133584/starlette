@@ -711,3 +711,19 @@ def test_request_url_starlette_context(test_client_factory: TestClientFactory) -
     client = test_client_factory(app)
     client.get("/home")
     assert url_for == URL("http://testserver/home")
+
+
+def test_request_url_without_host_or_server() -> None:
+    scope: Scope = {
+        "type": "http",
+        "scheme": "http",
+        "path": "//evil.example/x",
+        "query_string": b"a=1",
+        "headers": [],
+        "server": None,
+    }
+    request = Request(scope)
+    assert request.url.netloc == ""
+    assert request.url.path == "//evil.example/x"
+    assert request.url.query == "a=1"
+    assert request.url.hostname is None
